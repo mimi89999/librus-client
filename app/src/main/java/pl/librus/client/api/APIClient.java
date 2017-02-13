@@ -8,17 +8,13 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
-import com.fasterxml.jackson.datatype.joda.deser.LocalTimeDeserializer;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.RequestParams;
 
 import org.joda.time.LocalDate;
-import org.joda.time.LocalDateTime;
-import org.joda.time.LocalTime;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -26,26 +22,10 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import io.requery.Persistable;
 import java8.util.concurrent.CompletableFuture;
 import pl.librus.client.LibrusUtils;
-import pl.librus.client.datamodel.Announcement;
-import pl.librus.client.datamodel.Attendance;
-import pl.librus.client.datamodel.AttendanceCategory;
-import pl.librus.client.datamodel.Average;
-import pl.librus.client.datamodel.Event;
-import pl.librus.client.datamodel.EventCategory;
-import pl.librus.client.datamodel.Grade;
-import pl.librus.client.datamodel.GradeCategory;
-import pl.librus.client.datamodel.GradeComment;
-import pl.librus.client.datamodel.LibrusColor;
-import pl.librus.client.datamodel.LuckyNumber;
-import pl.librus.client.datamodel.Me;
-import pl.librus.client.datamodel.PlainLesson;
-import pl.librus.client.datamodel.Subject;
-import pl.librus.client.datamodel.Teacher;
 import pl.librus.client.datamodel.Timetable;
 
 import static pl.librus.client.LibrusUtils.log;
@@ -209,6 +189,16 @@ public class APIClient {
         String endpoint = "/Timetables?weekStart=" + weekStart.toString("yyyy-MM-dd");
 
         return getObject(endpoint, "Timetable", Timetable.class);
+    }
+
+    public <T extends Persistable> CompletableFuture<List<T>> getAll(Class<T> clazz) {
+        EntityInfo info = EntityInfos.infoFor(clazz);
+        if(info.single()) {
+            return getObject(info.endpoint(), info.topLevelName(), clazz)
+                    .thenApply(Lists::newArrayList);
+        } else {
+            return getList(info.endpoint(), info.topLevelName(), clazz);
+        }
     }
 
     public <T> CompletableFuture<T> getObject(String endpoint, final String topLevelName, final Class<T> clazz) {

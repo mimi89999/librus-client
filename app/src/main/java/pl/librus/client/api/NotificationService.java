@@ -10,10 +10,11 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
+import com.google.common.collect.Iterables;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import pl.librus.client.R;
 import pl.librus.client.datamodel.Announcement;
@@ -32,13 +33,11 @@ import static android.content.Context.NOTIFICATION_SERVICE;
  * Created by szyme on 17.12.2016. librus-client
  */
 
-class NotificationService {
+public class NotificationService {
     private static final String DEFAULT_POSITION = "NotificationService:redirect_fragment";
-    private static final String TAG = "librus-client-logError";
     private final Context context;
 
-
-    NotificationService(Context context) {
+    public NotificationService(Context context) {
         this.context = context;
     }
 
@@ -119,7 +118,6 @@ class NotificationService {
                     .setBigContentTitle(title)
                     .setSummaryText(me.account().login() + " - " + me.account().name());
             for (Grade g : grades) {
-//                String category = data.getGradeCategoriesMap().get(g.getCategoryId()).name();
                 String subject = MainApplication.getData().findByKey(Subject.class, g.subject().id()).name();
                 style.addLine(g.grade() + " " + subject);
                 if (!subjects.contains(subject))
@@ -171,8 +169,9 @@ class NotificationService {
         return this;
     }
 
-    NotificationService addLuckyNumber(LuckyNumber ln) {
-        if (ln == null) return this;
+    NotificationService addLuckyNumber(List<LuckyNumber> luckyNumbers) {
+        if (luckyNumbers == null || luckyNumbers.isEmpty()) return this;
+        LuckyNumber ln = Iterables.getOnlyElement(luckyNumbers);
         sendNotification(
                 "Szczęśliwy numerek: " + ln.luckyNumber(),
                 ln.day().toString("EEEE, d MMMM yyyy", new Locale("pl")),
