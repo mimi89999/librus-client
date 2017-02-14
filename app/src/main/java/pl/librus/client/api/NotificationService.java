@@ -16,6 +16,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import java8.util.stream.Collectors;
+import java8.util.stream.StreamSupport;
+import pl.librus.client.LibrusUtils;
 import pl.librus.client.R;
 import pl.librus.client.datamodel.Announcement;
 import pl.librus.client.datamodel.Event;
@@ -68,33 +71,30 @@ public class NotificationService {
     }
 
     NotificationService addAnnouncements(List<Announcement> announcements) {
-        Me me = MainApplication.getData().select(Me.class).get().firstOrNull();
         int size = announcements.size();
         if (size == 1) {
             Announcement announcement = announcements.get(0);
             Notification.BigTextStyle style = new Notification.BigTextStyle()
                     .setBigContentTitle(announcement.subject())
-                    .bigText(announcement.content())
-                    .setSummaryText(me.account().login() + " - " + me.account().name());
+                    .bigText(announcement.content());
             sendNotification(announcement.subject(), announcement.content(), R.drawable.ic_announcement_black_48dp, null, style, MainActivity.FRAGMENT_ANNOUNCEMENTS_ID);
         } else if (size > 1) {
-            String title;
-            List<String> authors = new ArrayList<>();
-            int authorsLength = 0;
-            if (2 <= size && size <= 4) title = size + " nowe ogłoszenia";
-            else if (5 <= size) title = size + " nowych ogłoszeń";
-            else title = "Nowe ogłoszenia: " + size;
+            String title = size +
+                    LibrusUtils.getPluralForm(size, " nowe ogłoszenie", " nowe ogłoszenia", " nowych ogłoszeń");
             Notification.InboxStyle style = new Notification.InboxStyle()
-                    .setBigContentTitle(title)
-                    .setSummaryText(me.account().login() + " - " + me.account().name());
-            for (Announcement a : announcements) {
-                style.addLine(a.subject());
-                Teacher author = MainApplication.getData().findByKey(Teacher.class, a.addedBy().id());
-                if (authorsLength + author.name().length() < 40) {
-                    authors.add(author.name());
-                }
-            }
-            sendNotification(title, TextUtils.join(", ", authors), R.drawable.ic_announcement_black_48dp, null, style, MainActivity.FRAGMENT_ANNOUNCEMENTS_ID);
+                    .setBigContentTitle(title);
+            List<String> subjects = StreamSupport.stream(announcements)
+                    .map(Announcement::subject)
+                    .collect(Collectors.toList());
+            StreamSupport.stream(subjects)
+                    .forEach(style::addLine);
+            String text = TextUtils.join(", ", subjects);
+            sendNotification(title,
+                    text,
+                    R.drawable.ic_announcement_black_48dp,
+                    null,
+                    style,
+                    MainActivity.FRAGMENT_ANNOUNCEMENTS_ID);
         }
         return this;
     }
